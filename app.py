@@ -201,6 +201,7 @@ elif menu == "📥 Bulk Downloader":
         height=200
     )
 
+    # Create downloads folder
     download_folder = "downloads"
 
     if not os.path.exists(download_folder):
@@ -216,6 +217,8 @@ elif menu == "📥 Bulk Downloader":
 
             downloaded_files = []
 
+            status_box = st.empty()
+
             for index, url in enumerate(url_list):
 
                 url = url.strip()
@@ -223,6 +226,10 @@ elif menu == "📥 Bulk Downloader":
                 if url:
 
                     try:
+
+                        status_box.info(
+                            f"⬇ Downloading: {url}"
+                        )
 
                         response = requests.get(url)
 
@@ -255,9 +262,15 @@ elif menu == "📥 Bulk Downloader":
 
                     except Exception as e:
 
-                        st.error(f"❌ Error downloading: {url}")
+                        st.error(
+                            f"❌ Error downloading: {url}"
+                        )
 
                         st.code(str(e))
+
+            status_box.success(
+                "✅ Download Process Completed"
+            )
 
             st.success(
                 f"✅ Successfully downloaded {len(downloaded_files)} files"
@@ -299,31 +312,56 @@ elif menu == "⚡ Speed Test":
 
         try:
 
-            with st.spinner("Running Speed Test..."):
+            # Live Status
+            status_text = st.empty()
 
-                progress = st.progress(0)
+            # Progress Bar
+            progress = st.progress(0)
 
-                for i in range(30):
-                    time.sleep(0.03)
-                    progress.progress((i + 1) * 3)
+            # Step 1
+            status_text.info("🔍 Finding best server...")
+            progress.progress(10)
 
-                # Initialize Speed Test
-                stest = speedtest.Speedtest()
+            stest = speedtest.Speedtest()
 
-                # Find Best Server
-                stest.get_best_server()
+            stest.get_best_server()
 
-                # Run Tests
-                download_speed = stest.download() / 1_000_000
-                upload_speed = stest.upload() / 1_000_000
-                ping_result = stest.results.ping
+            time.sleep(1)
 
-                progress.progress(100)
+            # Step 2
+            status_text.info("⬇ Testing download speed...")
+            progress.progress(35)
 
-            st.success("✅ Speed Test Completed Successfully")
+            download_speed = stest.download() / 1_000_000
+
+            time.sleep(1)
+
+            # Step 3
+            status_text.info("⬆ Testing upload speed...")
+            progress.progress(70)
+
+            upload_speed = stest.upload() / 1_000_000
+
+            time.sleep(1)
+
+            # Step 4
+            status_text.info("📡 Calculating ping...")
+            progress.progress(90)
+
+            ping_result = stest.results.ping
+
+            time.sleep(1)
+
+            # Finish
+            progress.progress(100)
+
+            status_text.success(
+                "✅ Speed Test Completed Successfully"
+            )
 
             st.divider()
 
+            # Results
             col1, col2, col3 = st.columns(3)
 
             with col1:
@@ -346,7 +384,7 @@ elif menu == "⚡ Speed Test":
 
             st.divider()
 
-            # Connection Quality
+            # Network Quality
             if download_speed > 100:
 
                 st.success(
