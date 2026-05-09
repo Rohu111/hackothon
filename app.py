@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import time
 import os
+import speedtest
 
 # =========================================================
 # PAGE CONFIG
@@ -100,21 +101,21 @@ menu = st.sidebar.radio(
 st.sidebar.success("🟢 System Online")
 
 # =========================================================
-# TOP DASHBOARD METRICS
+# TOP METRICS
 # =========================================================
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("⬇ Download", "85 Mbps")
+    st.metric("⬇ Download", "LIVE")
 
 with col2:
-    st.metric("⬆ Upload", "42 Mbps")
+    st.metric("⬆ Upload", "LIVE")
 
 with col3:
-    st.metric("📡 Ping", "12 ms")
+    st.metric("📡 Ping", "LIVE")
 
 with col4:
-    st.metric("🌐 Status", "ONLINE")
+    st.metric("🌐 Status", "ACTIVE")
 
 st.divider()
 
@@ -127,14 +128,15 @@ if menu == "🌐 Website Monitor":
 
     url = st.text_input(
         "Enter Website URL",
-        placeholder="https://example.com"
+        placeholder="https://google.com"
     )
 
-    if st.button("Check Status"):
+    if st.button("Check Website Status"):
 
         if url:
 
             try:
+
                 start_time = time.time()
 
                 response = requests.get(url, timeout=5)
@@ -159,23 +161,32 @@ if menu == "🌐 Website Monitor":
 
                 with col3:
                     st.metric(
-                        "🟢 Website",
+                        "🟢 Server Status",
                         "ONLINE"
                     )
 
+                st.divider()
+
                 if response.status_code == 200:
-                    st.success("✅ Website is ONLINE and reachable")
+
+                    st.success("✅ Website is ONLINE")
+
                     st.balloons()
 
                 else:
+
                     st.warning(
                         "⚠️ Website reachable but returned an issue"
                     )
 
-            except:
+            except Exception as e:
+
                 st.error("❌ Website is OFFLINE or invalid URL")
 
+                st.code(str(e))
+
         else:
+
             st.warning("⚠️ Please enter a valid URL")
 
 # =========================================================
@@ -190,7 +201,6 @@ elif menu == "📥 Bulk Downloader":
         height=200
     )
 
-    # Create download folder
     download_folder = "downloads"
 
     if not os.path.exists(download_folder):
@@ -216,29 +226,38 @@ elif menu == "📥 Bulk Downloader":
 
                         response = requests.get(url)
 
-                        # Get filename
-                        filename = url.split("/")[-1]
+                        if response.status_code == 200:
 
-                        if filename == "":
-                            filename = f"file_{index}"
+                            filename = url.split("/")[-1]
 
-                        file_path = os.path.join(
-                            download_folder,
-                            filename
-                        )
+                            if filename == "":
+                                filename = f"file_{index}"
 
-                        # Save file locally
-                        with open(file_path, "wb") as file:
-                            file.write(response.content)
+                            file_path = os.path.join(
+                                download_folder,
+                                filename
+                            )
 
-                        downloaded_files.append(file_path)
+                            with open(file_path, "wb") as file:
+                                file.write(response.content)
 
-                        progress_bar.progress(
-                            (index + 1) / len(url_list)
-                        )
+                            downloaded_files.append(file_path)
 
-                    except Exception:
-                        st.error(f"❌ Failed to download: {url}")
+                            progress_bar.progress(
+                                (index + 1) / len(url_list)
+                            )
+
+                        else:
+
+                            st.error(
+                                f"❌ Failed to download: {url}"
+                            )
+
+                    except Exception as e:
+
+                        st.error(f"❌ Error downloading: {url}")
+
+                        st.code(str(e))
 
             st.success(
                 f"✅ Successfully downloaded {len(downloaded_files)} files"
@@ -252,16 +271,19 @@ elif menu == "📥 Bulk Downloader":
 
                 file_name = os.path.basename(file_path)
 
+                st.write(f"✅ {file_name}")
+
                 with open(file_path, "rb") as file:
 
                     st.download_button(
-                        label=f"⬇ Download {file_name}",
+                        label=f"⬇ Save {file_name}",
                         data=file,
                         file_name=file_name,
                         mime="application/octet-stream"
                     )
 
         else:
+
             st.warning("⚠️ Please paste at least one URL")
 
 # =========================================================
@@ -269,47 +291,87 @@ elif menu == "📥 Bulk Downloader":
 # =========================================================
 elif menu == "⚡ Speed Test":
 
-    st.subheader("⚡ Internet Speed Analyzer")
+    st.subheader("⚡ Real-Time Internet Speed Test")
 
-    st.info("Demo version for hackathon presentation")
+    st.info("Run a real network speed analysis")
 
     if st.button("Run Speed Test"):
 
-        with st.spinner("Running Speed Test..."):
+        try:
 
-            progress = st.progress(0)
+            with st.spinner("Running Speed Test..."):
 
-            for i in range(100):
-                time.sleep(0.02)
-                progress.progress(i + 1)
+                progress = st.progress(0)
 
-        st.success("✅ Speed Test Completed")
+                for i in range(30):
+                    time.sleep(0.03)
+                    progress.progress((i + 1) * 3)
 
-        col1, col2, col3 = st.columns(3)
+                # Initialize Speed Test
+                stest = speedtest.Speedtest()
 
-        with col1:
-            st.metric(
-                "⬇ Download Speed",
-                "92 Mbps"
-            )
+                # Find Best Server
+                stest.get_best_server()
 
-        with col2:
-            st.metric(
-                "⬆ Upload Speed",
-                "45 Mbps"
-            )
+                # Run Tests
+                download_speed = stest.download() / 1_000_000
+                upload_speed = stest.upload() / 1_000_000
+                ping_result = stest.results.ping
 
-        with col3:
-            st.metric(
-                "📡 Ping",
-                "10 ms"
-            )
+                progress.progress(100)
 
-        st.balloons()
+            st.success("✅ Speed Test Completed Successfully")
 
-        st.info(
-            "Network quality is stable and performing efficiently."
-        )
+            st.divider()
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "⬇ Download Speed",
+                    f"{download_speed:.2f} Mbps"
+                )
+
+            with col2:
+                st.metric(
+                    "⬆ Upload Speed",
+                    f"{upload_speed:.2f} Mbps"
+                )
+
+            with col3:
+                st.metric(
+                    "📡 Ping",
+                    f"{ping_result:.2f} ms"
+                )
+
+            st.divider()
+
+            # Connection Quality
+            if download_speed > 100:
+
+                st.success(
+                    "🚀 Excellent Internet Connection"
+                )
+
+            elif download_speed > 50:
+
+                st.info(
+                    "⚡ Good Internet Connection"
+                )
+
+            else:
+
+                st.warning(
+                    "🐢 Slow Internet Connection"
+                )
+
+            st.balloons()
+
+        except Exception as e:
+
+            st.error("❌ Speed Test Failed")
+
+            st.code(str(e))
 
 # =========================================================
 # FOOTER
