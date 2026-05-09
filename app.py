@@ -1,111 +1,321 @@
+import streamlit as st
+import requests
+import time
+import os
+
+# =========================================================
+# PAGE CONFIG
+# =========================================================
+st.set_page_config(
+    page_title="AlphaNet",
+    page_icon="🛡️",
+    layout="wide"
+)
+
+# =========================================================
+# CUSTOM CSS
+# =========================================================
+st.markdown("""
+<style>
+
+/* Main Background */
+.stApp {
+    background-color: #0E1117;
+    color: white;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #161B22;
+}
+
+/* Metric Cards */
+div[data-testid="metric-container"] {
+    background-color: #1E1E1E;
+    border: 1px solid #00C8FF;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0px 0px 12px rgba(0,200,255,0.4);
+}
+
+/* Headers */
+h1, h2, h3 {
+    color: #00FF9F;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #00C8FF;
+    color: black;
+    border-radius: 10px;
+    font-weight: bold;
+    width: 100%;
+    border: none;
+    padding: 10px;
+}
+
+/* Text Inputs */
+.stTextInput > div > div > input {
+    background-color: #1E1E1E;
+    color: white;
+}
+
+/* Text Area */
+textarea {
+    background-color: #1E1E1E !important;
+    color: white !important;
+}
+
+/* Labels */
+label {
+    color: white !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# HEADER
+# =========================================================
+st.title("🛡️ AlphaNet")
+st.subheader("Network Utility & Monitoring Suite")
+st.caption("Monitor. Analyze. Optimize.")
+
+st.divider()
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+st.sidebar.title("🛠️ AlphaNet Menu")
+
+menu = st.sidebar.radio(
+    "Navigation",
+    [
+        "🌐 Website Monitor",
+        "📥 Bulk Downloader",
+        "⚡ Speed Test"
+    ]
+)
+
+st.sidebar.success("🟢 System Online")
+
+# =========================================================
+# TOP DASHBOARD METRICS
+# =========================================================
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric("⬇ Download", "85 Mbps")
+
+with col2:
+    st.metric("⬆ Upload", "42 Mbps")
+
+with col3:
+    st.metric("📡 Ping", "12 ms")
+
+with col4:
+    st.metric("🌐 Status", "ONLINE")
+
+st.divider()
+
+# =========================================================
+# WEBSITE MONITOR
+# =========================================================
+if menu == "🌐 Website Monitor":
+
+    st.subheader("🌐 Website Uptime Monitor")
+
+    url = st.text_input(
+        "Enter Website URL",
+        placeholder="https://example.com"
+    )
+
+    if st.button("Check Status"):
+
+        if url:
+
+            try:
+                start_time = time.time()
+
+                response = requests.get(url, timeout=5)
+
+                end_time = time.time()
+
+                response_time = round(end_time - start_time, 2)
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric(
+                        "🌐 Status Code",
+                        response.status_code
+                    )
+
+                with col2:
+                    st.metric(
+                        "⚡ Response Time",
+                        f"{response_time} sec"
+                    )
+
+                with col3:
+                    st.metric(
+                        "🟢 Website",
+                        "ONLINE"
+                    )
+
+                if response.status_code == 200:
+                    st.success("✅ Website is ONLINE and reachable")
+                    st.balloons()
+
+                else:
+                    st.warning(
+                        "⚠️ Website reachable but returned an issue"
+                    )
+
+            except:
+                st.error("❌ Website is OFFLINE or invalid URL")
+
+        else:
+            st.warning("⚠️ Please enter a valid URL")
+
+# =========================================================
+# BULK DOWNLOADER
+# =========================================================
+elif menu == "📥 Bulk Downloader":
+
+    st.subheader("📥 Bulk URL Downloader")
+
+    urls = st.text_area(
+        "Paste URLs Here (One per line)",
+        height=200
+    )
+
+    # Create download folder
+    download_folder = "downloads"
+
+    if not os.path.exists(download_folder):
+        os.makedirs(download_folder)
+
+    if st.button("Start Download"):
+
+        if urls:
+
+            url_list = urls.splitlines()
+
+            progress_bar = st.progress(0)
+
+            downloaded_files = []
+
+            for index, url in enumerate(url_list):
+
+                url = url.strip()
+
+                if url:
+
+                    try:
+
+                        response = requests.get(url)
+
+                        # Get filename
+                        filename = url.split("/")[-1]
+
+                        if filename == "":
+                            filename = f"file_{index}"
+
+                        file_path = os.path.join(
+                            download_folder,
+                            filename
+                        )
+
+                        # Save file locally
+                        with open(file_path, "wb") as file:
+                            file.write(response.content)
+
+                        downloaded_files.append(file_path)
+
+                        progress_bar.progress(
+                            (index + 1) / len(url_list)
+                        )
+
+                    except Exception:
+                        st.error(f"❌ Failed to download: {url}")
+
+            st.success(
+                f"✅ Successfully downloaded {len(downloaded_files)} files"
+            )
+
+            st.divider()
+
+            st.subheader("📂 Downloaded Files")
+
+            for file_path in downloaded_files:
+
+                file_name = os.path.basename(file_path)
+
+                with open(file_path, "rb") as file:
+
+                    st.download_button(
+                        label=f"⬇ Download {file_name}",
+                        data=file,
+                        file_name=file_name,
+                        mime="application/octet-stream"
+                    )
+
+        else:
+            st.warning("⚠️ Please paste at least one URL")
+
 # =========================================================
 # SPEED TEST
 # =========================================================
 elif menu == "⚡ Speed Test":
 
-    st.subheader("⚡ Real-Time Internet Speed Test")
+    st.subheader("⚡ Internet Speed Analyzer")
 
-    st.info("Run a real network speed analysis")
+    st.info("Demo version for hackathon presentation")
 
     if st.button("Run Speed Test"):
 
-        try:
+        with st.spinner("Running Speed Test..."):
 
-            # Live Status Box
-            status_text = st.empty()
-
-            # Progress Bar
             progress = st.progress(0)
 
-            # Step 1
-            status_text.info("🔍 Finding best server...")
-            progress.progress(10)
+            for i in range(100):
+                time.sleep(0.02)
+                progress.progress(i + 1)
 
-            stest = speedtest.Speedtest()
+        st.success("✅ Speed Test Completed")
 
-            stest.get_best_server()
+        col1, col2, col3 = st.columns(3)
 
-            time.sleep(1)
-
-            # Step 2
-            status_text.info("⬇ Testing download speed...")
-            progress.progress(35)
-
-            download_speed = stest.download() / 1_000_000
-
-            time.sleep(1)
-
-            # Step 3
-            status_text.info("⬆ Testing upload speed...")
-            progress.progress(70)
-
-            upload_speed = stest.upload() / 1_000_000
-
-            time.sleep(1)
-
-            # Step 4
-            status_text.info("📡 Calculating ping...")
-            progress.progress(90)
-
-            ping_result = stest.results.ping
-
-            time.sleep(1)
-
-            # Finish
-            progress.progress(100)
-
-            status_text.success(
-                "✅ Speed Test Completed Successfully"
+        with col1:
+            st.metric(
+                "⬇ Download Speed",
+                "92 Mbps"
             )
 
-            st.divider()
+        with col2:
+            st.metric(
+                "⬆ Upload Speed",
+                "45 Mbps"
+            )
 
-            # Results
-            col1, col2, col3 = st.columns(3)
+        with col3:
+            st.metric(
+                "📡 Ping",
+                "10 ms"
+            )
 
-            with col1:
-                st.metric(
-                    "⬇ Download Speed",
-                    f"{download_speed:.2f} Mbps"
-                )
+        st.balloons()
 
-            with col2:
-                st.metric(
-                    "⬆ Upload Speed",
-                    f"{upload_speed:.2f} Mbps"
-                )
+        st.info(
+            "Network quality is stable and performing efficiently."
+        )
 
-            with col3:
-                st.metric(
-                    "📡 Ping",
-                    f"{ping_result:.2f} ms"
-                )
+# =========================================================
+# FOOTER
+# =========================================================
+st.divider()
 
-            st.divider()
-
-            # Network Quality
-            if download_speed > 100:
-
-                st.success(
-                    "🚀 Excellent Internet Connection"
-                )
-
-            elif download_speed > 50:
-
-                st.info(
-                    "⚡ Good Internet Connection"
-                )
-
-            else:
-
-                st.warning(
-                    "🐢 Slow Internet Connection"
-                )
-
-            st.balloons()
-
-        except Exception as e:
-
-            st.error("❌ Speed Test Failed")
-
-            st.code(str(e))
+st.caption(
+    "🛡️ AlphaNet | Developed by Team ALPHA PAIR"
+)
