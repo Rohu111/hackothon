@@ -1,3 +1,4 @@
 streamlit
 requests
 speedtest-cli
+pandas
