@@ -1,19 +1,24 @@
 import streamlit as st
 import requests
 import time
+import os
 
-# ---------------- PAGE CONFIG ----------------
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 st.set_page_config(
     page_title="AlphaNet",
     page_icon="🛡️",
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
+# =========================================================
+# CUSTOM CSS
+# =========================================================
 st.markdown("""
 <style>
 
-/* Main App */
+/* Main Background */
 .stApp {
     background-color: #0E1117;
     color: white;
@@ -39,16 +44,18 @@ h1, h2, h3 {
 }
 
 /* Buttons */
-.stButton>button {
+.stButton > button {
     background-color: #00C8FF;
     color: black;
     border-radius: 10px;
     font-weight: bold;
     width: 100%;
+    border: none;
+    padding: 10px;
 }
 
 /* Text Inputs */
-.stTextInput>div>div>input {
+.stTextInput > div > div > input {
     background-color: #1E1E1E;
     color: white;
 }
@@ -67,14 +74,18 @@ label {
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HEADER ----------------
+# =========================================================
+# HEADER
+# =========================================================
 st.title("🛡️ AlphaNet")
 st.subheader("Network Utility & Monitoring Suite")
 st.caption("Monitor. Analyze. Optimize.")
 
 st.divider()
 
-# ---------------- SIDEBAR ----------------
+# =========================================================
+# SIDEBAR
+# =========================================================
 st.sidebar.title("🛠️ AlphaNet Menu")
 
 menu = st.sidebar.radio(
@@ -88,7 +99,9 @@ menu = st.sidebar.radio(
 
 st.sidebar.success("🟢 System Online")
 
-# ---------------- TOP METRICS ----------------
+# =========================================================
+# TOP DASHBOARD METRICS
+# =========================================================
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -177,35 +190,76 @@ elif menu == "📥 Bulk Downloader":
         height=200
     )
 
+    # Create download folder
+    download_folder = "downloads"
+
+    if not os.path.exists(download_folder):
+        os.makedirs(download_folder)
+
     if st.button("Start Download"):
 
         if urls:
 
             url_list = urls.splitlines()
 
-            total_urls = len(url_list)
-
             progress_bar = st.progress(0)
 
-            status_text = st.empty()
+            downloaded_files = []
 
-            completed = 0
+            for index, url in enumerate(url_list):
 
-            for i, url in enumerate(url_list):
+                url = url.strip()
 
-                if url.strip() != "":
+                if url:
 
-                    status_text.info(f"Downloading: {url}")
+                    try:
 
-                    time.sleep(0.5)
+                        response = requests.get(url)
 
-                    completed += 1
+                        # Get filename
+                        filename = url.split("/")[-1]
 
-                    progress_bar.progress((i + 1) / total_urls)
+                        if filename == "":
+                            filename = f"file_{index}"
+
+                        file_path = os.path.join(
+                            download_folder,
+                            filename
+                        )
+
+                        # Save file locally
+                        with open(file_path, "wb") as file:
+                            file.write(response.content)
+
+                        downloaded_files.append(file_path)
+
+                        progress_bar.progress(
+                            (index + 1) / len(url_list)
+                        )
+
+                    except Exception:
+                        st.error(f"❌ Failed to download: {url}")
 
             st.success(
-                f"✅ Download simulation completed for {completed} URLs"
+                f"✅ Successfully downloaded {len(downloaded_files)} files"
             )
+
+            st.divider()
+
+            st.subheader("📂 Downloaded Files")
+
+            for file_path in downloaded_files:
+
+                file_name = os.path.basename(file_path)
+
+                with open(file_path, "rb") as file:
+
+                    st.download_button(
+                        label=f"⬇ Download {file_name}",
+                        data=file,
+                        file_name=file_name,
+                        mime="application/octet-stream"
+                    )
 
         else:
             st.warning("⚠️ Please paste at least one URL")
@@ -217,9 +271,7 @@ elif menu == "⚡ Speed Test":
 
     st.subheader("⚡ Internet Speed Analyzer")
 
-    st.info(
-        "Demo version for hackathon presentation"
-    )
+    st.info("Demo version for hackathon presentation")
 
     if st.button("Run Speed Test"):
 
@@ -259,7 +311,9 @@ elif menu == "⚡ Speed Test":
             "Network quality is stable and performing efficiently."
         )
 
-# ---------------- FOOTER ----------------
+# =========================================================
+# FOOTER
+# =========================================================
 st.divider()
 
 st.caption(
